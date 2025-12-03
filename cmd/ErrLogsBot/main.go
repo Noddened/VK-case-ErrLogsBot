@@ -4,8 +4,10 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/Noddened/ErrLogsBot/internal/adapters"
 	"github.com/Noddened/ErrLogsBot/internal/config"
 	"github.com/Noddened/ErrLogsBot/internal/logger"
+	"github.com/Noddened/ErrLogsBot/payload"
 )
 
 func main() {
@@ -20,12 +22,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("Бот успешно инициализирован")
-
 	// Запуск генератора логов (по таску) + TODO: сделать очистку файла со временем
+	//...
+	payload.StartLogGenerator()
 
 	// Запуск самого бота
-
+	tgAdapter, err := adapters.NewTelegramAdapter(cfg)
+	if err != nil {
+		slog.Error("Не удалось создать TG адаптер", "error", err)
+		os.Exit(1)
+	}
+	// фильтр по файлу конфигурации
+	filters, err := config.LoadFilters(log)
 	// Завершение работы по сигналу
 
 	/*

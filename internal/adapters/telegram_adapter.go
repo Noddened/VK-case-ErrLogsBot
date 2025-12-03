@@ -155,5 +155,7 @@ func (a *TelegramAdapter) Start() {
 		}
 		return c.Send("Прекращение рассылки, больше логи не будут приходить.\n")
 	})
-	slog.Info("Telegram")
+	slog.Info("Telegram бот запущен")
+
+	a.bot.Start()
 }

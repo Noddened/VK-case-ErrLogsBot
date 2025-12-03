@@ -3,6 +3,7 @@ package config
 import (
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/Noddened/ErrLogsBot/internal/validators"
 	"github.com/joho/godotenv"
@@ -48,4 +49,21 @@ func maskToken(token string) string {
 		return "***"
 	}
 	return token[:4] + "***" + token[len(token)-4:]
+}
+
+func LoadFilters(logger *slog.Logger) ([]string, error) {
+	data, err := os.ReadFile("configs/filters.txt")
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(data), "\n")
+	var filters []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line != "" && !strings.HasPrefix(line, "#") {
+			filters = append(filters, line)
+		}
+	}
+	logger.Info("Фильтры загружены", "count", len(filters))
+	return filters, nil
 }
