@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Noddened/ErrLogsBot/internal/config"
 	"github.com/Noddened/ErrLogsBot/internal/utils"
@@ -122,20 +123,42 @@ func (a *TelegramAdapter) Broadcast(line string) {
 		text := utils.EscapeMarkdownV2(line)
 
 		for _, chatID := range subs {
-			_, err := a.bot.Send(&telebot.User{ID: chatID}, text, &telebot.SendOptions{
-				ParseMode:             telebot.ModeMarkdownV2,
-				DisableWebPagePreview: true,
-			})
+			var err error
+			retries := 0
+			maxRetries := 3
 
-			if err != nil {
-				slog.Error("Не удалось отправить пользователю", "chat_id", chatID, "error", err)
+			// Retry loop с экспоненциальной задержкой при rate limiting
+			for retries < maxRetries {
+				_, err = a.bot.Send(&telebot.User{ID: chatID}, text, &telebot.SendOptions{
+					ParseMode:             telebot.ModeMarkdownV2,
+					DisableWebPagePreview: true,
+				})
+
+				if err == nil {
+					slog.Debug("Сообщение отправлено", "chat_id", chatID)
+					break
+				}
+
+				// Обработка rate limiting (код 429)
+				if strings.Contains(err.Error(), "429") {
+					retries++
+					if retries < maxRetries {
+						// Ждём перед повторной попыткой (экспоненциальная задержка)
+						waitTime := time.Duration(retries*retries) * time.Second
+						slog.Warn("Rate limit от Telegram, ждём перед повтором", "chat_id", chatID, "wait_seconds", waitTime.Seconds(), "retry", retries)
+						time.Sleep(waitTime)
+						continue
+					}
+				}
+
+				// Другие ошибки
+				slog.Error("Не удалось отправить пользователю", "chat_id", chatID, "error", err, "retries", retries)
 				// если бота блокнули, то удаляем юзера из списка
 				if strings.Contains(err.Error(), "blocked") || strings.Contains(err.Error(), "not found") {
 					slog.Info("Удаляем заблокировавшего бота пользователя", "chat_id", chatID)
 					a.Unsubscribe(chatID)
 				}
-			} else {
-				slog.Debug("Сообщение отправлено", "chat_id", chatID)
+				break
 			}
 		}
 	}()

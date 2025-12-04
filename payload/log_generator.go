@@ -13,7 +13,7 @@ import (
 
 const (
 	logFileName = "payload/logs.log"
-	maxLines    = 200
+	MaxLines    = 200             // Увеличено, чтобы реже происходила очистка файла
 	maxSize     = 5 * 1024 * 1024 // 5мб
 )
 
@@ -34,7 +34,7 @@ func StartLogGenerator(ctx context.Context, logger *slog.Logger) {
 	rand.Seed(time.Now().UnixNano())
 
 	go func() {
-		ticker := time.NewTicker(500 * time.Millisecond)
+		ticker := time.NewTicker(1 * time.Second) // Генерируем логи реже чтобы не spam Telegram
 		defer ticker.Stop()
 
 		for {
@@ -59,8 +59,8 @@ func generateLog(logger *slog.Logger) {
 		return
 	}
 	// Очистка по линиям
-	if len(lines) >= maxLines {
-		lines = lines[len(lines)-maxLines+1:]
+	if len(lines) >= MaxLines {
+		lines = lines[len(lines)-MaxLines+1:]
 	}
 
 	// Очистка по размеру

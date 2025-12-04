@@ -52,11 +52,11 @@ func StartLogMonitoring(ctx context.Context, adapter *adapters.TelegramAdapter, 
 					continue
 				}
 
-				// Если размер файла меньше позиции, значит файл был переписан/очищен
-				// Сбрасываем позицию на начало
 				if info.Size() < pos {
-					logger.Info("Файл logs.log был переписан, сбрасываем позицию", "oldPos", pos, "newSize", info.Size())
+					// Файл очищен. Сбрасываем позицию на 0 и начинаем читать заново
+					os.Remove(logFilePath)
 					pos = 0
+					logger.Info("Файл logs.log очищен, сбрасываем позицию на начало")
 				}
 
 				if info.Size() > pos {
