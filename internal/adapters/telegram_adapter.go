@@ -113,27 +113,32 @@ func (a *TelegramAdapter) GetSubscribers() []int64 {
 
 // Отправка сообщений всем юзерам бота
 func (a *TelegramAdapter) Broadcast(line string) {
-	subs := a.GetSubscribers()
-	if len(subs) == 0 {
-		return
-	}
-	text := utils.EscapeMarkdownV2(line)
+	// Запускаем отправку в отдельной горутине, чтобы не блокировать монитор логов
+	go func() {
+		subs := a.GetSubscribers()
+		if len(subs) == 0 {
+			return
+		}
+		text := utils.EscapeMarkdownV2(line)
 
-	for _, chatID := range subs {
-		_, err := a.bot.Send(&telebot.User{ID: chatID}, text, &telebot.SendOptions{
-			ParseMode:             telebot.ModeMarkdownV2,
-			DisableWebPagePreview: true,
-		})
+		for _, chatID := range subs {
+			_, err := a.bot.Send(&telebot.User{ID: chatID}, text, &telebot.SendOptions{
+				ParseMode:             telebot.ModeMarkdownV2,
+				DisableWebPagePreview: true,
+			})
 
-		if err != nil {
-			slog.Error("Не удалось отправить пользователю", "chat_id", chatID)
-			// если бота блокнули, то удаляем юзера из списка
-			if strings.Contains(err.Error(), "blocked") || strings.Contains(err.Error(), "not found") {
-				slog.Info("Удаляем заблокировавшего бота пользователя", "chat_id", chatID)
-				a.Unsubscribe(chatID)
+			if err != nil {
+				slog.Error("Не удалось отправить пользователю", "chat_id", chatID, "error", err)
+				// если бота блокнули, то удаляем юзера из списка
+				if strings.Contains(err.Error(), "blocked") || strings.Contains(err.Error(), "not found") {
+					slog.Info("Удаляем заблокировавшего бота пользователя", "chat_id", chatID)
+					a.Unsubscribe(chatID)
+				}
+			} else {
+				slog.Debug("Сообщение отправлено", "chat_id", chatID)
 			}
 		}
-	}
+	}()
 }
 
 func (a *TelegramAdapter) Start() {

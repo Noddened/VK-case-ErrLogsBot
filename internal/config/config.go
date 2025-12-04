@@ -14,6 +14,7 @@ import (
 // *Через сообщения личные
 type Config struct {
 	BotToken string
+	Filters  []string
 }
 
 func LoadConfig(logger *slog.Logger) (*Config, error) {
@@ -36,8 +37,15 @@ func LoadConfig(logger *slog.Logger) (*Config, error) {
 		return nil, err
 	}
 
+	filters, err := LoadFilters(logger)
+	if err != nil {
+		logger.Warn("Не удалось загрузить фильтры – используем дефолтные")
+		filters = []string{"ERROR", "Invalid input"} // Дефолт
+	}
+
 	return &Config{
 		BotToken: botToken,
+		Filters:  filters,
 	}, nil
 }
 
