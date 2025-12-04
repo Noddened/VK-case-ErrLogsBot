@@ -73,6 +73,7 @@ func generateLog(logger *slog.Logger) {
 	logLevels := []string{"DEBUG", "INFO", "ERROR"}
 	logLine := fmt.Sprintf("%s [%s] %s", time.Now().Format(time.RFC3339), logLevels[rand.Intn(len(logLevels))], messages[rand.Intn(len(messages))])
 	lines = append(lines, logLine)
+	lines = append(lines, "") // Добавляем пустую строку после каждого лога
 
 	if err := writeLines(lines, logFileName); err != nil {
 		logger.Error("Ошибка записи в logs.log", "error", err)
