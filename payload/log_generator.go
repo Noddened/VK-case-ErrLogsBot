@@ -34,7 +34,7 @@ func StartLogGenerator(ctx context.Context, logger *slog.Logger) {
 	rand.Seed(time.Now().UnixNano())
 
 	go func() {
-		ticker := time.NewTicker(100 * time.Millisecond)
+		ticker := time.NewTicker(500 * time.Millisecond)
 		defer ticker.Stop()
 
 		for {
